@@ -44,8 +44,6 @@ variable "all_traffic" {
   default = "0.0.0.0/0"
 }
 
-
-
 variable "instance-type" {
   type    = string
   default = "t3.micro"

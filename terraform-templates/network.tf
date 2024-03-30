@@ -130,15 +130,12 @@ resource "aws_route_table" "rt_jenkins_worker" {
   }
 }
 
-
-
 # createing main route table association for worker
 resource "aws_main_route_table_association" "rta_jenkins_worker" {
   route_table_id = aws_route_table.rt_jenkins_worker.id
   provider       = aws.region-worker
   vpc_id         = aws_vpc.vpc_jenkins_worker.id
 }
-
 
 #Create SG for allowing TCP/8080 from * and TCP/22 from your IP in master region
 resource "aws_security_group" "jenkins-sg" {
@@ -197,6 +194,43 @@ resource "aws_security_group" "jenkins-worker-sg" {
     protocol    = "-1"
     cidr_blocks = [var.subet-1-master, var.subet-2-master]
   }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.all_traffic]
+  }
+}
+
+resource "aws_security_group" "lb-security-group" {
+
+  provider    = aws.region-master
+  name        = "Load balancer for master jenkins"
+  description = "Allow 443 and traffic to Jenkins master security group"
+  vpc_id      = aws_vpc.vpc_jenkins_master.id
+  ingress {
+    description = "Allow 443 from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.all_traffic]
+  }
+  ingress {
+    description = "Allow 80 from anywhere for redirection"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.all_traffic]
+  }
+
+  ingress {
+    description     = "Allow traffic to jenkins-sg"
+    from_port       = 0
+    to_port         = 0
+    protocol        = "tcp"
+    security_groups = [aws_security_group.jenkins-sg.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
